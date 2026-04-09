@@ -1,115 +1,90 @@
-# Dynamic Pick and Place with Reactive Motion Replanning
+# Physical AI Challenge 2026: UR5 Robot Environment
 
-Reactive motion replanning system for UR5 manipulator that exploits kinematic redundancy to handle dynamic obstacles during pick-and-place operations.
+Welcome to the Physical AI Challenge! This repository contains a pre-configured ROS 2 Jazzy and Gazebo Harmonic simulation environment for a UR5 manipulator equipped with a Robotiq 85 Gripper. 
 
-## Overview
+To ensure everyone can run the code regardless of their laptop's operating system, the entire environment is contained within a **pre-built Docker image**.
 
-This project implements Strategy 1 reactive replanning: when obstacles appear mid-execution, the system detects the collision, aborts the current trajectory, and evaluates alternative joint configurations to find collision-free paths without full trajectory regeneration.
+## Prerequisites
 
-A 6-DOF manipulator reaching a 6-DOF Cartesian pose admits multiple valid joint configurations due to kinematic redundancy (elbow up/down, shoulder left/right, wrist flips). By pre-computing 15-20 IK solutions per target pose, the system can rapidly switch to valid alternatives when obstacles block the primary path.
+1. **Git**
+2. **Docker Desktop** (or Docker Engine on Linux)
+   - *Windows 11 Users:* Ensure the **WSL 2 backend** is enabled in Docker Desktop settings.
+   - *Windows 10 Users:* Install an X-Server like **VcXsrv** to enable Linux GUIs on your machine.
 
-## Features
+---
 
-- Reactive replanning using kinematic redundancy
-- Mid-execution obstacle detection and trajectory abortion
-- 15-20 distinct IK solutions computed per target pose
-- 1-3 second replanning latency
-- Robotiq 2F-85 gripper integration
-- Dynamic obstacle insertion via command line
-- Point cloud perception pipeline (work in progress)
+## 🚀 Getting Started
 
-## System Stack
-
-- ROS2 Jazzy
-- MoveIt2
-- Gazebo Harmonic
-- Ubuntu 24.04
-- UR5 + Robotiq 2F-85
-
-## Installation
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/abdu7rahman/motion-replanning-ur5.git
-cd ur_ws/
-colcon build
-source install/setup.bash
+git clone https://github.com/vishal-finch/physical-ai-challenge-2026.git
+cd physical-ai-challenge-2026
 ```
 
-## Usage
+### 2. Allow GUI Windows (Linux / Windows 11 only)
+Before launching the container, you need to grant Docker permission to open graphical windows (like RViz and Gazebo) on your screen:
+```bash
+# Run this in your host terminal
+xhost +local:root
+```
 
-### Launch simulation
+### 3. Launch the Docker Environment
+
+Depending on your operating system, bring up the container:
+
+**Linux & Windows 11 (WSL 2):**
+```bash
+docker compose up -d
+```
+
+**Windows 10 (Using VcXsrv):**
+*(Make sure VcXsrv is running with "Disable access control" checked before running this!)*
+```bash
+docker compose -f docker-compose.windows.yml up -d
+```
+
+### 4. Enter the Workspace
+Once the container is running in the background, open an interactive bash shell inside the container:
+```bash
+docker exec -it ur5_hackathon bash
+```
+
+---
+
+## 🛠️ Running the Simulation
+
+Everything you do from this point forward should be inside the `ur5_hackathon` Docker terminal!
+
+### 1. Start the Robot Simulation
+Launch RViz, MoveIt, and the Gazebo Simulator:
 ```bash
 ros2 launch ur5_moveit simulated_robot.launch.py
 ```
+*(Keep this terminal open, and open a second terminal for the next commands by running `docker exec -it ur5_hackathon bash` again).*
 
-### Run pick and place
+### 2. Set Up the Environment
+Spawn the tables and cubes into MoveIt's planning scene:
 ```bash
-# Single cube
-python3 src/ur5_moveit/ur5_moveit/pick_and_place.py
-
-# All 3 cubes
-python3 src/ur5_moveit/ur5_moveit/pick_and_place_advanced.py
+ros2 run ur5_moveit add_scene_objects
 ```
 
-### Insert obstacle (in separate terminal)
+### 3. Add Dynamic Obstacles (Optional)
+You can test obstacle avoidance by spawning dynamic obstacles into both Gazebo and MoveIt:
 ```bash
-# Add obstacle
-python3 src/ur5_moveit/ur5_moveit/insert_obstacle.py --x 0.3 --y -0.2 --z 0.5 --radius 0.04 --height 0.25
+# Add a cylindrical obstacle
+ros2 run ur5_moveit insert_obstacle --x 0.3 --y -0.2 --z 0.5 --radius 0.04 --height 0.25
 
-# Remove obstacle
-python3 src/ur5_moveit/ur5_moveit/insert_obstacle.py --name obstacle --remove
+# Remove the obstacle
+ros2 run ur5_moveit insert_obstacle --name obstacle --remove
 ```
 
-## How It Works
+---
 
-1. Compute multiple IK solutions for target pose using randomized seeds
-2. Begin trajectory execution toward first solution
-3. Monitor `/collision_object` topic for obstacles
-4. On obstacle detection:
-   - Abort current trajectory
-   - Iterate through remaining IK solutions
-   - Plan and execute first collision-free configuration
-5. Continue pick-and-place operation
+## 🧠 Your Challenge
 
-## Results
+Your task is to build upon this clean base. You have access to the UR5 and the environment. You will need to:
+1. Attach cameras/sensors.
+2. Develop perception logic.
+3. Write your own Inverse Kinematics / Pick-and-Place orchestrator.
 
-| Metric | Value |
-|--------|-------|
-| IK solutions per pose | 15-20 |
-| Replanning latency | 1-3 seconds |
-| IK discovery rate | 15-20% from 100 attempts |
-
-## Project Structure
-```
-├── ur5_moveit/
-│   ├── pick_and_place.py          # Single cube demo
-│   ├── pick_and_place_advanced.py # All 3 cubes
-│   ├── insert_obstacle.py         # Dynamic obstacle insertion
-│   └── pointcloud_to_planning_scene.py  # Perception (WIP)
-├── worlds/
-│   └── pick_place.world           # Gazebo world with tables and cubes
-└── config/
-    └── ...                        # MoveIt2 configs
-```
-
-## Acknowledgments
-
-This project builds upon the [UR5 ROS2 Workspace](https://github.com/nithishreddy1101/ur5_ws) by Nithish Reddy, which provided pre-configured Gazebo Harmonic integration with the Robotiq 2F-85 gripper.
-
-## Future Work
-
-- Strategy 2: Predictive replanning with time-to-collision estimation
-- Strategy 3: CHOMP/TrajOpt-style local trajectory optimization
-- Complete point cloud perception for automatic obstacle detection
-- Quantitative evaluation with formal trials
-- Physical robot deployment
-- Move to a UR10e
-
-## License
-
-MIT
-
-## Author
-
-Mohammed Abdul Rahman  
-MS Robotics, Northeastern University  
-mohammedabdulr.1@northeastern.edu
+**Good luck, and build something awesome!**
