@@ -55,30 +55,20 @@ docker exec -it ur5_hackathon bash
 
 Everything you do from this point forward should be inside the `ur5_hackathon` Docker terminal!
 
-### 1. Start the Robot Simulation
+### 1. Installation
 Launch RViz, MoveIt, and the Gazebo Simulator:
 ```bash
-ros2 launch ur5_moveit simulated_robot.launch.py
+cd ur_ws/
+colcon build
+source install/setup.bash
 ```
 *(Keep this terminal open, and open a second terminal for the next commands by running `docker exec -it ur5_hackathon bash` again).*
 
-### 2. Set Up the Environment
-Spawn the tables and cubes into MoveIt's planning scene:
+### 2. Start Simulation
+
 ```bash
-ros2 run ur5_moveit add_scene_objects
+ros2 launch ur5_moveit simulated_robot.launch.py
 ```
-
-### 3. Add Dynamic Obstacles (Optional)
-You can test obstacle avoidance by spawning dynamic obstacles into both Gazebo and MoveIt:
-```bash
-# Add a cylindrical obstacle
-ros2 run ur5_moveit insert_obstacle --x 0.3 --y -0.2 --z 0.5 --radius 0.04 --height 0.25
-
-# Remove the obstacle
-ros2 run ur5_moveit insert_obstacle --name obstacle --remove
-```
-
----
 
 ## 🧠 Your Challenge
 
